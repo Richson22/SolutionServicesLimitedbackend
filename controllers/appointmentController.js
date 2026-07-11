@@ -100,7 +100,7 @@ async function createAppointment(req, res) {
       });
     }
 
-   let verifiedStatus = 'pending';
+   let verifiedStatus = 'pending'; // unpaid (cash) bookings start here — visible to staff immediately
 
     if (paymentMethod === 'paystack') {
       if (!paymentReference) {
@@ -132,7 +132,7 @@ async function createAppointment(req, res) {
         });
       }
 
-      verifiedStatus = 'confirmed';
+      verifiedStatus = 'paid_unassigned'; // payment verified, but no staff member has claimed it yet
     }
 
     const appointment = await Appointment.create({
@@ -278,7 +278,7 @@ async function getMyPendingRequests(req, res) {
     const appointments = await Appointment.find({
       business: 'Barbing Salon',
       providerName: null,
-      status: 'pending',
+      status: { $in: ['pending', 'paid_unassigned'] },
       declinedBy: { $ne: req.user.id }, // hide requests THIS staff member already declined
       date: { $gte: startOfToday },
     }).sort({ date: 1, startTime: 1 });
@@ -363,7 +363,7 @@ async function acceptAppointment(req, res) {
     }
 
     const appointment = await Appointment.findOneAndUpdate(
-      { _id: req.params.id, providerName: null, status: 'pending' },
+      { _id: req.params.id, providerName: null, status: { $in: ['pending', 'paid_unassigned'] } },
       { providerName: staffName, status: 'confirmed' },
       { new: true }
     );
