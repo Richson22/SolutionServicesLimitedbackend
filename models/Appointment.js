@@ -15,7 +15,7 @@ const appointmentSchema = new mongoose.Schema(
     endTime: { type: String, required: true }, // e.g. "10:30 AM"
     status: {
       type: String,
-      enum: ['confirmed', 'pending', 'cancelled', 'completed'],
+      enum: ['confirmed', 'pending', 'paid_unassigned', 'cancelled', 'completed'],
       default: 'pending',
     },
     declinedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // staff who declined — hidden from their own request list, but still visible to everyone else
