@@ -15,8 +15,29 @@ const orderRoutes = require('./routes/orderRoutes');
 
 const app = express();
 
+// Allowed origins: local dev + your deployed website (once live).
+// Add more via ALLOWED_ORIGINS in your .env as a comma-separated list —
+// e.g. ALLOWED_ORIGINS=https://your-deployed-site.vercel.app
+const defaultAllowedOrigins = [
+  'http://localhost:5173', // Vite dev server
+];
+
+const envOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const allowedOrigins = [...defaultAllowedOrigins, ...envOrigins, process.env.CLIENT_URL].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn('CORS blocked request from origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json());

@@ -14,6 +14,26 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { verifyToken } = require('../middleware/auth');
 
+// GET /api/account/me
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('name email role businessId createdAt');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Account not found' });
+    }
+    res.json({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      businessId: user.businessId,
+      memberSince: user.createdAt,
+    });
+  } catch (err) {
+    console.error('Error loading profile:', err);
+    res.status(500).json({ message: 'Failed to load profile' });
+  }
+});
+
 // PATCH /api/account/me   body: { name, email }
 router.patch('/me', verifyToken, async (req, res) => {
   try {
