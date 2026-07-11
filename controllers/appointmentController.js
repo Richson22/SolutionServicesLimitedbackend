@@ -190,13 +190,30 @@ async function getCurrentStaffName(req) {
 // this business, since any of them can be the one to accept it (Uber-style).
 async function getMyPendingRequests(req, res) {
   try {
+    // Only fetch from today onward at the DB level — cheap first pass to
+    // avoid pulling in bookings from days/weeks ago entirely.
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
     const appointments = await Appointment.find({
       business: 'Barbing Salon',
       providerName: null,
       status: 'pending',
+      declinedBy: { $ne: req.user.id }, // hide requests THIS staff member already declined
+      date: { $gte: startOfToday },
     }).sort({ date: 1, startTime: 1 });
 
-    const formatted = appointments.map((a) => ({
+    // Second pass, in-memory: for TODAY's bookings specifically, also drop
+    // ones whose exact startTime has already passed — the DB query above
+    // only filters by day, not time-of-day, since startTime is a separate
+    // "10:30 AM" string, not part of the Date field.
+    const now = new Date();
+    const stillUpcoming = appointments.filter((a) => {
+      const start = parseAppointmentDateTime(a.date, a.startTime);
+      return !start || start.getTime() >= now.getTime();
+    });
+
+    const formatted = stillUpcoming.map((a) => ({
       id: a._id,
       client: a.customerName,
       phone: a.customerPhone,
@@ -297,7 +314,12 @@ async function acceptAppointment(req, res) {
 // add that if staff are currently seeing declined requests reappear.
 async function declineAppointment(req, res) {
   try {
-    const appointment = await Appointment.findById(req.params.id);
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.id,
+      { $addToSet: { declinedBy: req.user.id } }, // $addToSet avoids duplicate entries if clicked twice
+      { new: true }
+    );
+
     if (!appointment) {
       return res.status(404).json({ success: false, message: 'Appointment not found' });
     }

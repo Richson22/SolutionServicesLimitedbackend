@@ -18,6 +18,7 @@ const appointmentSchema = new mongoose.Schema(
       enum: ['confirmed', 'pending', 'cancelled', 'completed'],
       default: 'pending',
     },
+    declinedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // staff who declined — hidden from their own request list, but still visible to everyone else
 
     // Home-visit booking details — the barber needs these to actually show up
     customerName: { type: String, required: true },
