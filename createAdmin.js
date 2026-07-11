@@ -17,8 +17,8 @@ async function createAdmin() {
   console.log('Connected to MongoDB');
 
   // CHANGE these before running
-  const email = 'abachorsimon2022@gmail.com';
-  const plainPassword = 'Admin1234';
+  const email = 'xpresssolutiontechnology@gmail.com';
+  const plainPassword = 'Emma2798@';
   const name = 'Admin';
 
   const existing = await User.findOne({ email });
