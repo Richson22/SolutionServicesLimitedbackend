@@ -6,6 +6,7 @@ const router = express.Router();
 const {
   getAppointments,
   cancelAppointment,
+  rescheduleAppointment,
   getBusinessAppointments,
   createAppointment,
   getMyPendingRequests,
@@ -18,6 +19,7 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 router.get('/', verifyToken, getAppointments);
 router.post('/', verifyToken, createAppointment);
 router.patch('/:id/cancel', verifyToken, cancelAppointment);
+router.patch('/:id/reschedule', verifyToken, rescheduleAppointment);
 
 // Staff/manager view — sees every appointment for the Barbing Salon
 router.get('/staff/all', verifyToken, requireRole('staff', 'manager', 'admin'), getBusinessAppointments);

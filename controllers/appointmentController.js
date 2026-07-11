@@ -185,6 +185,86 @@ async function getCurrentStaffName(req) {
   return user?.name || null;
 }
 
+// "10:30 AM" -> minutes since midnight
+function timeToMinutes(timeStr) {
+  const match = timeStr && timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return null;
+  const [, h, m, period] = match;
+  let hours = parseInt(h, 10) % 12;
+  if (period.toUpperCase() === 'PM') hours += 12;
+  return hours * 60 + parseInt(m, 10);
+}
+
+// minutes since midnight -> "11:15 AM"
+function minutesToTime(totalMinutes) {
+  const h24 = Math.floor(totalMinutes / 60) % 24;
+  const m = totalMinutes % 60;
+  const period = h24 >= 12 ? 'PM' : 'AM';
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+// PATCH /api/appointments/:id/reschedule
+// Customer picks a new date/time. Preserves the original service duration,
+// resets to unassigned ("finding a barber") since the previously assigned
+// barber may not be free at the new time, and clears decline history since
+// staff who couldn't do the old slot might well be free for the new one.
+async function rescheduleAppointment(req, res) {
+  try {
+    const { id } = req.params;
+    const { date, startTime } = req.body;
+
+    if (!date || !startTime) {
+      return res.status(400).json({ success: false, message: 'date and startTime are required' });
+    }
+
+    const appointment = await Appointment.findById(id);
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Appointment not found' });
+    }
+    if (appointment.userId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'You do not have access to this appointment' });
+    }
+    if (appointment.status === 'cancelled' || appointment.status === 'completed') {
+      return res.status(400).json({ success: false, message: 'This appointment can no longer be rescheduled' });
+    }
+
+    const oldStart = timeToMinutes(appointment.startTime);
+    const oldEnd = timeToMinutes(appointment.endTime);
+    const durationMinutes = oldStart != null && oldEnd != null ? oldEnd - oldStart : 20;
+
+    const newStartMinutes = timeToMinutes(startTime);
+    if (newStartMinutes == null) {
+      return res.status(400).json({ success: false, message: 'Invalid startTime format' });
+    }
+    const newEndTime = minutesToTime(newStartMinutes + durationMinutes);
+
+    appointment.date = date;
+    appointment.startTime = startTime;
+    appointment.endTime = newEndTime;
+    appointment.providerName = null;
+    appointment.status = 'pending';
+    appointment.declinedBy = [];
+    await appointment.save();
+
+    try {
+      const businessId = BUSINESS_DISPLAY_TO_ID[appointment.business];
+      if (businessId) {
+        const staffMembers = await User.find({ businessId, role: 'staff' }).select('email');
+        const staffEmails = staffMembers.map((s) => s.email).filter(Boolean);
+        await sendNewBookingEmail({ to: staffEmails, appointment });
+      }
+    } catch (notifyErr) {
+      console.error('Failed to send reschedule notification emails:', notifyErr);
+    }
+
+    return res.status(200).json({ success: true, appointment: formatAppointment(appointment) });
+  } catch (err) {
+    console.error('rescheduleAppointment error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to reschedule appointment' });
+  }
+}
+
 // GET /api/appointments/staff/requests
 // Unassigned pending bookings — visible to EVERY available staff member at
 // this business, since any of them can be the one to accept it (Uber-style).
@@ -391,6 +471,7 @@ function parseAppointmentDateTime(date, timeStr) {
 module.exports = {
   getAppointments,
   cancelAppointment,
+  rescheduleAppointment,
   getBusinessAppointments,
   createAppointment,
   getMyPendingRequests,
