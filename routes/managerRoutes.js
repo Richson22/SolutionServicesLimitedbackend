@@ -155,7 +155,7 @@ router.get('/:businessId/records', managerOnly, async (req, res) => {
 router.post('/:businessId/records', managerOnly, async (req, res) => {
   try {
     const { businessId } = req.params;
-    const { title, services, expenses, weeklyIncome, totalExpenses, netTotal } = req.body;
+    const { title, services, expenses, weeklyIncome, totalExpenses, netTotal, recordDate, recordTime } = req.body;
 
     if (!title || !Array.isArray(services) || services.length === 0) {
       return res.status(400).json({ success: false, message: 'title and at least one service entry are required' });
@@ -177,6 +177,8 @@ router.post('/:businessId/records', managerOnly, async (req, res) => {
       weeklyIncome: Number(weeklyIncome) || 0,
       totalExpenses: Number(totalExpenses) || 0,
       netTotal: Number(netTotal) || 0,
+      recordDate: recordDate || '',
+      recordTime: recordTime || '',
       status: 'pending',
     });
 

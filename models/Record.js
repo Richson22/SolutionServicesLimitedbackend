@@ -42,6 +42,8 @@ const recordSchema = new mongoose.Schema(
     weeklyIncome: { type: Number, default: 0 },
     totalExpenses: { type: Number, default: 0 },
     netTotal: { type: Number, default: 0 },
+    recordDate: { type: String, default: '' },
+    recordTime: { type: String, default: '' },
   },
   { timestamps: true }
 );

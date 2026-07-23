@@ -175,6 +175,8 @@ router.get('/records', adminOnly, async (req, res) => {
             business: rec.business,
             manager: rec.manager,
             createdAt: rec.createdAt,
+            recordDate: rec.recordDate,
+            recordTime: rec.recordTime,
           });
         });
       });
@@ -311,6 +313,43 @@ router.get('/records/:id', adminOnly, async (req, res) => {
   } catch (err) {
     console.error('Error loading record:', err);
     res.status(500).json({ success: false, message: 'Failed to load record' });
+  }
+});
+
+// PATCH /api/admin/records/:id — edit services/expenses/weeklyIncome on a pending record
+router.patch('/records/:id', adminOnly, async (req, res) => {
+  try {
+    const { services, expenses, weeklyIncome } = req.body;
+
+    if (!Array.isArray(services) || services.length === 0) {
+      return res.status(400).json({ success: false, message: 'At least one valid service entry is required.' });
+    }
+
+    const cleanExpenses = Array.isArray(expenses) ? expenses : [];
+    const totalExpenses = cleanExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    const income = Number(weeklyIncome) || 0;
+    const netTotal = income - totalExpenses;
+
+    const record = await Record.findByIdAndUpdate(
+      req.params.id,
+      {
+        services,
+        expenses: cleanExpenses,
+        weeklyIncome: income,
+        totalExpenses,
+        netTotal,
+      },
+      { new: true }
+    ).populate('manager', 'name email');
+
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Record not found' });
+    }
+
+    res.json({ success: true, record });
+  } catch (err) {
+    console.error('Error editing record:', err);
+    res.status(500).json({ success: false, message: 'Failed to save changes' });
   }
 });
 
