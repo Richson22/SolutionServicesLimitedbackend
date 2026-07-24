@@ -12,6 +12,7 @@ const serviceEntrySchema = new mongoose.Schema(
     service: { type: String, required: true },
     price: { type: Number, required: true },
     barber: { type: String, required: true },
+    paymentMode: { type: String, enum: ['Cash', 'Transfer'], default: 'Cash' },
   },
   { _id: false }
 );

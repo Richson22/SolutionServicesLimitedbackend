@@ -171,6 +171,7 @@ router.get('/records', adminOnly, async (req, res) => {
             service: s.service,
             staffName: s.barber,
             price: s.price,
+            paymentMode: s.paymentMode || '—',
             status: rec.status,
             business: rec.business,
             manager: rec.manager,
