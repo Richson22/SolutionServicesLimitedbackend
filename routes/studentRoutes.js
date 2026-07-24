@@ -114,6 +114,7 @@ router.post('/attendance/check-in', studentOnly, async (req, res) => {
     }
 
     const distance = haversineDistance(lat, lng, loc.lat, loc.lng);
+    console.log('DEBUG check-in:', { received: { lat, lng }, storedLocation: loc, distance, businessId });
     if (distance > ALLOWED_RADIUS_METERS) {
       return res.status(403).json({ success: false, message: 'You are not on school grounds yet' });
     }
