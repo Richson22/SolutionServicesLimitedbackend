@@ -12,13 +12,4 @@ router.post('/equipment', gmOnly, createEquipment);
 // GET /api/general-manager/equipment?business=XpressSolution-1
 router.get('/equipment', gmOnly, listEquipment);
 
-// GET /api/admin/equipment?business=XpressSolution-1&status=pending
-
-
-// PATCH /api/admin/equipment/:id/status
-router.patch('/equipment/:id/status', adminOnly, updateEquipmentStatus);
-
-// DELETE /api/admin/equipment/:id
-router.delete('/equipment/:id', adminOnly, deleteEquipment);
-
 module.exports = router;
