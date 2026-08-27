@@ -38,7 +38,7 @@ async function registerUser(req, res) {
       return res.status(400).json({ success: false, message: 'role must be student, staff, manager, or general-manager' });
     }
 
-    if ((role === 'manager' || role === 'general-manager') && !businessId) {
+    if (role === 'manager' && !businessId) {
       return res.status(400).json({ success: false, message: 'businessId is required when registering a manager' });
     }
 
