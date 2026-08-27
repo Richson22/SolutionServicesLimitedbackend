@@ -13,7 +13,7 @@ router.post('/equipment', gmOnly, createEquipment);
 router.get('/equipment', gmOnly, listEquipment);
 
 // GET /api/admin/equipment?business=XpressSolution-1&status=pending
-router.get('/equipment', adminOnly, listEquipment);
+
 
 // PATCH /api/admin/equipment/:id/status
 router.patch('/equipment/:id/status', adminOnly, updateEquipmentStatus);
