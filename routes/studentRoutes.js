@@ -40,9 +40,9 @@ const studentOnly = [verifyToken, requireRole('student')];
 
 // ASSUMPTION: replace with each business's real coordinates.
 const BUSINESS_LOCATIONS = {
-  'XpressSolution-1': { lat: REAL_LAT_1, lng: REAL_LNG_1, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
-  'TheStyleZone-2': { lat: REAL_LAT_2, lng: REAL_LNG_2, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
-  'SolutionfeetHub-3': { lat: REAL_LAT_3, lng: REAL_LNG_3, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
+  'XpressSolution-1': { lat: 0, lng: 0, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
+  'TheStyleZone-2': { lat: 0, lng: 0, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
+  'SolutionfeetHub-3': { lat: 0, lng: 0, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
 };
 
 const ALLOWED_RADIUS_METERS = 100;
