@@ -51,6 +51,8 @@ app.use('/api', authRoutes);
 app.use('/api/admin/shoes', adminShoeRoutes);
 app.use('/api/shoes', shoeRoutes);
 app.use('/api/admin', adminDashboardRoutes);
+const generalManagerRoutes = require('./routes/generalManagerRoutes');
+app.use('/api/general-manager', generalManagerRoutes);
 app.use('/api/manager', managerRoutes);
 app.use('/api/student', require('./routes/studentRoutes'));
 app.use('/api/appointments', appointmentRoutes); // NEW — matches frontend's /api/appointments calls

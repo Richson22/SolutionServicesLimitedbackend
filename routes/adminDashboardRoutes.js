@@ -17,6 +17,7 @@ const ShoeRecord = require('../models/ShoeRecord');
 const Attendance = require('../models/Attendance');
 const Order = require('../models/Order');
 const { verifyToken, requireRole } = require('../middleware/auth');
+const { listEquipment, updateEquipmentStatus, deleteEquipment } = require('../controllers/equipmentController');
 
 const adminOnly = [verifyToken, requireRole('admin')];
 // const adminAuthMiddleware = require('../middleware/adminAuth'); // uncomment + adjust path
@@ -44,6 +45,7 @@ router.get('/attendance', adminOnly, async (req, res) => {
       checkInTime: r.checkInTime,
       checkOutTime: r.checkOutTime,
       status: r.status,
+      checkInPhotoUrl: r.checkInPhotoUrl || '',
     }));
 
     res.json({ records: rows });
@@ -430,5 +432,14 @@ router.patch('/orders/:id/status', adminOnly, async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to update order status' });
   }
 });
+
+// GET /api/admin/equipment?business=XpressSolution-1&status=pending
+router.get('/equipment', adminOnly, listEquipment);
+
+// PATCH /api/admin/equipment/:id/status
+router.patch('/equipment/:id/status', adminOnly, updateEquipmentStatus);
+
+// DELETE /api/admin/equipment/:id
+router.delete('/equipment/:id', adminOnly, deleteEquipment);
 
 module.exports = router;

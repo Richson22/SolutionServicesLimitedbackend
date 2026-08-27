@@ -13,13 +13,36 @@ const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const attendancePhotoStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'attendance-photos',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    public_id: (req, file) => `checkin-${req.user.id}-${Date.now()}`,
+  },
+});
+const uploadAttendancePhoto = multer({
+  storage: attendancePhotoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
 const studentOnly = [verifyToken, requireRole('student')];
 
 // ASSUMPTION: replace with each business's real coordinates.
 const BUSINESS_LOCATIONS = {
-  'XpressSolution-1': { lat: 8.94344, lng: 7.55111, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
-  'TheStyleZone-2': { lat: 8.94344, lng: 7.55111, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
-  'SolutionfeetHub-3': { lat: 8.94344, lng: 7.55111, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
+  'XpressSolution-1': { lat: REAL_LAT_1, lng: REAL_LNG_1, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
+  'TheStyleZone-2': { lat: REAL_LAT_2, lng: REAL_LNG_2, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
+  'SolutionfeetHub-3': { lat: REAL_LAT_3, lng: REAL_LNG_3, classStartHour: 8, lateCutoffHour: 10, lateCutoffMinute: 30 },
 };
 
 const ALLOWED_RADIUS_METERS = 100;
@@ -102,11 +125,16 @@ router.get('/attendance/history', studentOnly, async (req, res) => {
   }
 });
 
-// POST /api/student/attendance/check-in   body: { lat, lng }
-router.post('/attendance/check-in', studentOnly, async (req, res) => {
+// POST /api/student/attendance/check-in   multipart/form-data: { lat, lng, photo }
+router.post('/attendance/check-in', studentOnly, uploadAttendancePhoto.single('photo'), async (req, res) => {
   try {
-    const { lat, lng } = req.body;
+    const lat = Number(req.body.lat);
+    const lng = Number(req.body.lng);
     const businessId = req.user.businessId;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'A live photo is required to check in.' });
+    }
     const loc = BUSINESS_LOCATIONS[businessId];
 
     if (!loc) {
@@ -115,11 +143,7 @@ router.post('/attendance/check-in', studentOnly, async (req, res) => {
 
     const distance = haversineDistance(lat, lng, loc.lat, loc.lng);
     if (distance > ALLOWED_RADIUS_METERS) {
-      return res.status(403).json({
-        success: false,
-        message: 'You are not on school grounds yet',
-        debug: { received: { lat, lng }, storedLocation: loc, distance, businessId },
-      });
+      return res.status(403).json({ success: false, message: 'You are not on school grounds yet' });
     }
 
     const now = new Date();
@@ -143,6 +167,7 @@ router.post('/attendance/check-in', studentOnly, async (req, res) => {
         date,
         checkInTime: now,
         checkInLocation: { lat, lng },
+        checkInPhotoUrl: req.file.path,
         status,
       },
       { upsert: true, new: true }

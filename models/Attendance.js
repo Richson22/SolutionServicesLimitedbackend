@@ -24,6 +24,7 @@ const attendanceSchema = new mongoose.Schema(
       lat: { type: Number },
       lng: { type: Number },
     },
+    checkInPhotoUrl: { type: String, default: '' },
 
     status: {
       type: String,
