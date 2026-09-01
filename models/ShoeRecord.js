@@ -44,7 +44,7 @@ const shoeRecordSchema = new mongoose.Schema(
     },
 
     notes: { type: String, default: '' },
-
+    imageUrl: { type: String, default: '' }, // photo of the shoe/item, for arrival & sale records
    // Review status — matches the approve/reject actions on the admin
     // Records page (same pattern as the barber-shop Record model).
     status: {

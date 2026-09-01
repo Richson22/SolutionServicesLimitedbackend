@@ -18,6 +18,29 @@ const { verifyToken, requireRole, requireOwnBusiness } = require('../middleware/
 const managerOnly = [verifyToken, requireRole('manager', 'general-manager'), requireOwnBusiness];
 const ShoeRecord = require('../models/ShoeRecord'); // arrival/sale/attendance for Solution Feet Hub
 
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const shoeRecordImageStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'shoe-record-images',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    public_id: (req, file) => `shoe-record-${req.user.id}-${Date.now()}`,
+  },
+});
+const uploadShoeRecordImage = multer({
+  storage: shoeRecordImageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
 // GET /api/manager/me — works for any manager, no businessId needed
 router.get('/me', [verifyToken, requireRole('manager', 'general-manager')], async (req, res) => {
   try {
@@ -74,8 +97,8 @@ router.get('/:businessId/shoe-submissions', managerOnly, async (req, res) => {
 });
 
 // POST /api/manager/:businessId/shoe-records
-// Body: { type: 'arrival'|'sale'|'attendance', ...fields }
-router.post('/:businessId/shoe-records', managerOnly, async (req, res) => {
+// multipart/form-data: { type: 'arrival'|'sale'|'attendance', ...fields, image? }
+router.post('/:businessId/shoe-records', managerOnly, uploadShoeRecordImage.single('image'), async (req, res) => {
   try {
     const { businessId } = req.params;
     const { type, ...fields } = req.body;
@@ -98,6 +121,7 @@ router.post('/:businessId/shoe-records', managerOnly, async (req, res) => {
       quantity: fields.quantity ? Number(fields.quantity) : null,
       price: fields.price ? Number(fields.price) : null,
       notes: fields.notes || fields.staffPresent || '',
+      imageUrl: req.file ? req.file.path : '',
       status: 'pending',
     });
 
@@ -107,7 +131,6 @@ router.post('/:businessId/shoe-records', managerOnly, async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to submit record' });
   }
 });
-
 // GET /api/manager/:businessId/stats
 router.get('/:businessId/stats', managerOnly, async (req, res) => {
   try {
