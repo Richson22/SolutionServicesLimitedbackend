@@ -118,6 +118,7 @@ router.post('/:businessId/shoe-records', managerOnly, uploadShoeRecordImage.sing
       manager: req.user.id,
       title,
       shoeName: fields.shoeName || fields.itemName || '',
+      size: fields.size || '',
       quantity: fields.quantity ? Number(fields.quantity) : null,
       price: fields.price ? Number(fields.price) : null,
       notes: fields.notes || fields.staffPresent || '',
@@ -131,6 +132,54 @@ router.post('/:businessId/shoe-records', managerOnly, uploadShoeRecordImage.sing
     res.status(500).json({ success: false, message: 'Failed to submit record' });
   }
 });
+
+// GET /api/manager/:businessId/shoe-records?type=arrival|sale|attendance
+// Full list of this manager's own shoe records, with optional type filter —
+// used by the "My Records" page (different from /shoe-submissions, which is
+// capped to a recent handful for the dashboard feed).
+router.get('/:businessId/shoe-records', managerOnly, async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    const { type } = req.query;
+    const filter = { business: businessId, manager: req.user.id };
+    if (type) filter.type = type;
+    const records = await ShoeRecord.find(filter).sort({ createdAt: -1 }).lean();
+    res.json({ records });
+  } catch (err) {
+    console.error('Error loading shoe records:', err);
+    res.status(500).json({ message: 'Failed to load records' });
+  }
+});
+
+// PUT /api/manager/:businessId/shoe-records/:id
+// A manager can edit their own record, but only while it's still pending —
+// once admin has approved/rejected it, it's locked. Status itself is
+// intentionally not editable here — approve/reject is an admin-only action.
+router.put('/:businessId/shoe-records/:id', managerOnly, async (req, res) => {
+  try {
+    const { businessId, id } = req.params;
+    const { title, shoeName, size, quantity, price, notes } = req.body;
+    const record = await ShoeRecord.findOne({ _id: id, business: businessId, manager: req.user.id });
+    if (!record) {
+      return res.status(404).json({ message: 'Record not found' });
+    }
+    if (record.status !== 'pending') {
+      return res.status(400).json({ message: 'Only pending records can be edited' });
+    }
+    if (title !== undefined) record.title = title;
+    if (shoeName !== undefined) record.shoeName = shoeName;
+    if (size !== undefined) record.size = size;
+    if (quantity !== undefined) record.quantity = quantity === '' ? null : Number(quantity);
+    if (price !== undefined) record.price = price === '' ? null : Number(price);
+    if (notes !== undefined) record.notes = notes;
+    await record.save();
+    res.json(record);
+  } catch (err) {
+    console.error('Error updating shoe record:', err);
+    res.status(500).json({ message: 'Failed to save changes' });
+  }
+});
+
 // GET /api/manager/:businessId/stats
 router.get('/:businessId/stats', managerOnly, async (req, res) => {
   try {

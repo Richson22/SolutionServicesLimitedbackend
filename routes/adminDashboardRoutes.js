@@ -240,10 +240,11 @@ router.get('/shoe-records/:id', adminOnly, async (req, res) => {
 // PATCH /api/admin/shoe-records/:id — edit shoeName/quantity/price/notes
 router.patch('/shoe-records/:id', adminOnly, async (req, res) => {
   try {
-    const { shoeName, quantity, price, notes } = req.body;
+    const { shoeName, size, quantity, price, notes } = req.body;
 
     const update = {};
     if (shoeName !== undefined) update.shoeName = shoeName;
+    if (size !== undefined) update.size = size;
     if (quantity !== undefined) update.quantity = quantity === '' ? null : Number(quantity);
     if (price !== undefined) update.price = price === '' ? null : Number(price);
     if (notes !== undefined) update.notes = notes;

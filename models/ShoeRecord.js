@@ -29,6 +29,7 @@ const shoeRecordSchema = new mongoose.Schema(
 
     // --- Arrival-specific fields ---
     shoeName: { type: String, default: '' }, // used when `shoe` isn't linked yet
+    size: { type: String, default: '' }, // e.g. "42", "9.5", "EU 43" — shoe size for arrival & sale records
     quantity: { type: Number, default: null },
 
     // --- Sale-specific fields ---
