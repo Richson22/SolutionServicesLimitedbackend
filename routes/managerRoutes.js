@@ -140,17 +140,18 @@ router.post('/:businessId/shoe-records', managerOnly, uploadShoeRecordImage.sing
 router.get('/:businessId/shoe-records', managerOnly, async (req, res) => {
   try {
     const { businessId } = req.params;
-    const { type } = req.query;
+    const { type, limit } = req.query;
     const filter = { business: businessId, manager: req.user.id };
     if (type) filter.type = type;
-    const records = await ShoeRecord.find(filter).sort({ createdAt: -1 }).lean();
+    let query = ShoeRecord.find(filter).sort({ createdAt: -1 });
+    if (limit) query = query.limit(Math.min(parseInt(limit, 10) || 20, 100));
+    const records = await query.lean();
     res.json({ records });
   } catch (err) {
     console.error('Error loading shoe records:', err);
     res.status(500).json({ message: 'Failed to load records' });
   }
 });
-
 // PUT /api/manager/:businessId/shoe-records/:id
 // A manager can edit their own record, but only while it's still pending —
 // once admin has approved/rejected it, it's locked. Status itself is
@@ -184,25 +185,21 @@ router.put('/:businessId/shoe-records/:id', managerOnly, async (req, res) => {
 router.get('/:businessId/stats', managerOnly, async (req, res) => {
   try {
     const { businessId } = req.params;
+    const managerId = req.user.id;
 
-    const [totalStaff, pendingRecords] = await Promise.all([
-      User.countDocuments({ businessId, role: 'staff' }),
-      Record.countDocuments({ business: businessId, status: 'pending' }),
+    const [totalArrivals, totalSales, totalAttendance, pendingSubmissions] = await Promise.all([
+      ShoeRecord.countDocuments({ business: businessId, manager: managerId, type: 'arrival' }),
+      ShoeRecord.countDocuments({ business: businessId, manager: managerId, type: 'sale' }),
+      ShoeRecord.countDocuments({ business: businessId, manager: managerId, type: 'attendance' }),
+      ShoeRecord.countDocuments({ business: businessId, manager: managerId, status: 'pending' }),
     ]);
 
-    // ASSUMPTION: staffOnDuty / attendanceRate need your attendance system,
-    // which isn't wired up yet — returning 0 for now so the UI doesn't break.
-    // Once attendance logic is shared, replace these two with real queries.
-    const staffOnDuty = 0;
-    const attendanceRate = 0;
-
-    res.json({ totalStaff, pendingRecords, staffOnDuty, attendanceRate });
+    res.json({ totalArrivals, totalSales, totalAttendance, pendingSubmissions });
   } catch (err) {
     console.error('Error loading manager stats:', err);
     res.status(500).json({ message: 'Failed to load stats' });
   }
 });
-
 // GET /api/manager/:businessId/records?limit=5&sort=recent
 router.get('/:businessId/records', managerOnly, async (req, res) => {
   try {
