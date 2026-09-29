@@ -1,41 +1,40 @@
-// server/routes/cashierRoutes.js
-// Read-only price list for cashiers.
-// Reads the same shoe records the admin prices in AdminRecords.
-//
-// Mount in your main app: app.use('/api/cashier', require('./routes/cashierRoutes'));
-// TODO: change the ShoeRecord require below to the model behind /api/admin/:businessId/shoe-records
+const jwt = require('jsonwebtoken');
 
-const express = require('express');
-const router = express.Router();
+function verifyToken(req, res, next) {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-const ShoeRecord = require('../models/ShoeRecord'); // TODO: your real model name/path
-const { verifyToken, requireRole, requireOwnBusiness } = require('../middleware/auth');
-
-// GET /api/cashier/:businessId/prices  ->  { products: [...] }
-router.get(
-  '/:businessId/prices',
-  verifyToken,
-  requireRole('cashier'),
-  requireOwnBusiness,
-  async (req, res) => {
-    try {
-      const products = await ShoeRecord.find({
-        businessId: req.params.businessId, // TODO: use the field your model stores the business under
-        type: 'arrival',
-        status: 'approved',
-        price: { $gt: 0 },
-      })
-        // Whitelist only. Never send costPrice, supplier, notes or manager info to cashiers.
-        .select('shoeName title size price imageUrl createdAt')
-        .sort({ createdAt: -1 })
-        .lean();
-
-      res.json({ products });
-    } catch (err) {
-      console.error('Error loading cashier prices:', err);
-      res.status(500).json({ message: 'Could not load prices' });
-    }
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
   }
-);
 
-module.exports = router;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+}
+
+function requireRole(...allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'You do not have access to this resource' });
+    }
+    next();
+  };
+}
+
+function requireOwnBusiness(req, res, next) {
+  const { businessId } = req.params;
+  if (req.user.businessId !== businessId) {
+    return res.status(403).json({ success: false, message: 'You do not have access to this business' });
+  }
+  next();
+}
+
+module.exports = { verifyToken, requireRole, requireOwnBusiness };
