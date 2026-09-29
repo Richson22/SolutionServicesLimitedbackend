@@ -34,12 +34,12 @@ async function registerUser(req, res) {
       return res.status(400).json({ success: false, message: 'name, email, and role are required' });
     }
 
-    if (!['student', 'staff', 'manager', 'general-manager'].includes(role)) {
-      return res.status(400).json({ success: false, message: 'role must be student, staff, manager, or general-manager' });
+    if (!['student', 'staff', 'cashier', 'manager', 'general-manager'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'role must be student, staff, cashier, manager, or general-manager' });
     }
 
-    if (role === 'manager' && !businessId) {
-      return res.status(400).json({ success: false, message: 'businessId is required when registering a manager' });
+    if ((role === 'manager' || role === 'cashier') && !businessId) {
+      return res.status(400).json({ success: false, message: 'businessId is required when registering a manager or cashier' });
     }
 
     const existing = await User.findOne({ email });

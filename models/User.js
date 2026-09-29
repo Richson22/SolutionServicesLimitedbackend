@@ -8,10 +8,10 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // stored hashed, never plain text
     role: {
-      type: String,
-      enum: ['student', 'staff', 'manager', 'general-manager', 'admin', 'customer'],
-      required: true,
-    },
+  type: String,
+  enum: ['student', 'staff', 'cashier', 'manager', 'general-manager', 'admin', 'customer'],
+  required: true,
+},
     businessId: { type: String }, // which of the 3 shops — plain string for now until you have a Business model
     mustChangePassword: { type: Boolean, default: true },
     suspended: { type: Boolean, default: false }, // blocks login when true — enforced in the login controller
