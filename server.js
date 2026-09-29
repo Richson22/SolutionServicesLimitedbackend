@@ -58,6 +58,6 @@ app.use('/api/student', require('./routes/studentRoutes'));
 app.use('/api/appointments', appointmentRoutes); // NEW — matches frontend's /api/appointments calls
 app.use('/api/account', require('./routes/accountRoutes'));
 app.use('/api/orders', orderRoutes);
-
+app.use('/api/cashier', require('./routes/cashierRoutes'));
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
