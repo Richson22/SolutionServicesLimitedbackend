@@ -12,7 +12,8 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 
 const User = require('../models/User');
-const { verifyToken } = require('../middleware/auth');
+const ShoeRecord = require('../models/ShoeRecord');
+const { verifyToken, requireRole, requireOwnBusiness } = require('../middleware/auth');
 
 // GET /api/account/me
 router.get('/me', verifyToken, async (req, res) => {

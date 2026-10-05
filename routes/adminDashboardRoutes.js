@@ -320,7 +320,7 @@ router.get('/records/:id', adminOnly, async (req, res) => {
   }
 });
 
-// PATCH /api/admin/records/:id — edit services/expenses/weeklyIncome on a pending record
+// PATCH /api/admin/records/:id — edit services/expenses/weeklyIncome (any status)
 router.patch('/records/:id', adminOnly, async (req, res) => {
   try {
     const { services, expenses, weeklyIncome } = req.body;
