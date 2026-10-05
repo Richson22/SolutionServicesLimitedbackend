@@ -101,4 +101,58 @@ router.patch('/me/password', verifyToken, async (req, res) => {
   }
 });
 
+// POST /:businessId/sell
+// Cashier records a sale. Creates a pending ShoeRecord (type: 'sale') that
+// shows up in the admin Records page for approval, exactly like manager
+// arrivals already do. `manager` is reused here as "whoever submitted it" —
+// for a sale, that's the cashier, so admin's existing Manager column
+// automatically shows the cashier's name with no admin-side changes needed.
+router.post(
+  '/:businessId/sell',
+  verifyToken,
+  requireRole('cashier'),
+  requireOwnBusiness,
+  async (req, res) => {
+    try {
+      const { shoeName, size, price, quantity } = req.body;
+
+      if (!shoeName || !price) {
+        return res.status(400).json({ success: false, message: 'shoeName and price are required' });
+      }
+
+      const qty = Math.max(1, Number(quantity) || 1);
+
+      // Pull the photo from the matching arrival, if one exists, so the
+      // sale record shows the same image in the admin modal/table.
+      const matchingArrival = await ShoeRecord.findOne({
+        business: req.params.businessId,
+        type: 'arrival',
+        shoeName,
+        size: size || '',
+      })
+        .sort({ createdAt: -1 })
+        .select('imageUrl')
+        .lean();
+
+      const record = await ShoeRecord.create({
+        type: 'sale',
+        business: req.params.businessId,
+        manager: req.user.id, // the cashier who made this sale
+        title: `Sale: ${shoeName}${size ? ` (${size})` : ''}`,
+        shoeName,
+        size: size || '',
+        quantity: qty,
+        price: Number(price),
+        imageUrl: matchingArrival?.imageUrl || '',
+        status: 'pending', // reviewed by admin, same as every other submission
+      });
+
+      res.status(201).json({ success: true, record });
+    } catch (err) {
+      console.error('Error recording sale:', err);
+      res.status(500).json({ success: false, message: 'Could not record sale' });
+    }
+  }
+);
+
 module.exports = router;
