@@ -25,7 +25,7 @@ async function studentStaffLogin(req, res) {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
@@ -77,7 +77,8 @@ async function signup(req, res) {
       return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
     }
 
-    const existing = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       return res.status(409).json({ success: false, message: 'A user with this email already exists' });
     }
@@ -86,7 +87,7 @@ async function signup(req, res) {
 
     const user = await User.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role: 'customer',
       mustChangePassword: false, // they set their own password, no need to force a change

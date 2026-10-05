@@ -8,6 +8,7 @@
 // npm install bcryptjs
 
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const User = require('../models/User'); // adjust path to your real User model
 const { sendWelcomeEmail } = require('../utils/sendEmail');
 
@@ -16,7 +17,7 @@ function generateTempPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
   let pass = '';
   for (let i = 0; i < 8; i++) {
-    pass += chars[Math.floor(Math.random() * chars.length)];
+    pass += chars[crypto.randomInt(chars.length)];
   }
   return pass;
 }
@@ -42,7 +43,8 @@ async function registerUser(req, res) {
       return res.status(400).json({ success: false, message: 'businessId is required when registering a manager or cashier' });
     }
 
-    const existing = await User.findOne({ email });
+   const normalizedEmail = email.toLowerCase().trim();
+   const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       return res.status(409).json({ success: false, message: 'A user with this email already exists' });
     }
@@ -50,9 +52,9 @@ async function registerUser(req, res) {
     const tempPassword = generateTempPassword();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    const user = await User.create({
-      name,
-      email,
+     const user = await User.create({
+     name,
+     email: normalizedEmail,
       password: hashedPassword,
       role,
       businessId, // which of the 3 businesses this person belongs to

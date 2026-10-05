@@ -47,6 +47,8 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB Atlas connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
+app.set('trust proxy', 1); // required on Render so the rate limiter sees real client IPs
+app.use('/api/auth', require('./routes/passwordRoutes'));
 app.use('/api', authRoutes);
 app.use('/api/admin/shoes', adminShoeRoutes);
 app.use('/api/shoes', shoeRoutes);
