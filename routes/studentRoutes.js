@@ -186,7 +186,7 @@ router.post('/attendance/check-out', studentOnly, async (req, res) => {
     const record = await Attendance.findOneAndUpdate(
       { user: req.user.id, date: todayISO() },
       { checkOutTime: new Date() },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!record) {

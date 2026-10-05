@@ -122,8 +122,11 @@ router.patch('/users/:id/suspend', adminOnly, async (req, res) => {
       return res.status(400).json({ success: false, message: '"suspended" must be true or false' });
     }
 
-    const user = await User.findByIdAndUpdate(req.params.id, { suspended }, { new: true })
-      .select('name email role businessId suspended createdAt');
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { suspended },
+      { returnDocument: 'after' }
+    ).select('name email role businessId suspended createdAt');
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -249,7 +252,7 @@ router.patch('/shoe-records/:id', adminOnly, async (req, res) => {
     if (price !== undefined) update.price = price === '' ? null : Number(price);
     if (notes !== undefined) update.notes = notes;
 
-    const record = await ShoeRecord.findByIdAndUpdate(req.params.id, update, { new: true })
+    const record = await ShoeRecord.findByIdAndUpdate(req.params.id, update, { returnDocument: 'after' })
       .populate('manager', 'name email');
 
     if (!record) {
@@ -274,7 +277,7 @@ router.patch('/shoe-records/:id/status', adminOnly, async (req, res) => {
     const record = await ShoeRecord.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('manager', 'name email');
 
     if (!record) {
@@ -343,7 +346,7 @@ router.patch('/records/:id', adminOnly, async (req, res) => {
         totalExpenses,
         netTotal,
       },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('manager', 'name email');
 
     if (!record) {
@@ -368,7 +371,7 @@ router.patch('/records/:id/status', adminOnly, async (req, res) => {
     const record = await Record.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('manager', 'name email');
 
     if (!record) {
@@ -422,7 +425,7 @@ router.patch('/orders/:id/status', adminOnly, async (req, res) => {
       return res.status(400).json({ success: false, message: `status must be one of: ${allowed.join(', ')}` });
     }
 
-    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true }).populate('userId', 'name email');
+    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { returnDocument: 'after' }).populate('userId', 'name email');
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }

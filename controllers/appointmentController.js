@@ -365,7 +365,7 @@ async function acceptAppointment(req, res) {
     const appointment = await Appointment.findOneAndUpdate(
       { _id: req.params.id, providerName: null, status: { $in: ['pending', 'paid_unassigned'] } },
       { providerName: staffName, status: 'confirmed' },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!appointment) {
@@ -397,7 +397,7 @@ async function declineAppointment(req, res) {
     const appointment = await Appointment.findByIdAndUpdate(
       req.params.id,
       { $addToSet: { declinedBy: req.user.id } }, // $addToSet avoids duplicate entries if clicked twice
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!appointment) {

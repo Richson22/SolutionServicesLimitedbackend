@@ -55,7 +55,7 @@ router.patch('/me', verifyToken, async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { name, email },
-      { new: true }
+      { returnDocument: 'after' }
     ).select('name email role businessId');
 
     if (!user) {

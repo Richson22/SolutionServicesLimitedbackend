@@ -55,9 +55,11 @@ async function updateEquipmentStatus(req, res) {
       return res.status(400).json({ success: false, message: "status must be 'pending' or 'reviewed'" });
     }
 
-    const equipment = await Equipment.findByIdAndUpdate(req.params.id, { status }, { new: true })
-      .populate('addedBy', 'name');
-
+    const equipment = await Equipment.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { returnDocument: 'after' }
+    ).populate('addedBy', 'name');
     if (!equipment) {
       return res.status(404).json({ success: false, message: 'Equipment not found' });
     }
