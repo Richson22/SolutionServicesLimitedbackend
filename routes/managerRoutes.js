@@ -96,8 +96,13 @@ router.get('/:businessId/shoe-submissions', managerOnly, async (req, res) => {
   try {
     const { businessId } = req.params;
     const limit = Math.min(parseInt(req.query.limit, 10) || 8, 100);
+    const { category } = req.query;
 
-    const submissions = await ShoeRecord.find({ business: businessId, manager: req.user.id })
+    const filter = { business: businessId, manager: req.user.id };
+    if (category === 'clothes') filter.category = 'clothes';
+    else if (category === 'shoe') filter.category = { $ne: 'clothes' };
+
+    const submissions = await ShoeRecord.find(filter)
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate('manager', 'name')
@@ -137,6 +142,7 @@ router.post('/:businessId/shoe-records', managerOnly, handleImageUpload, async (
       price: fields.price ? Number(fields.price) : null,
       notes: fields.notes || fields.staffPresent || '',
       imageUrl: req.file ? req.file.path : '',
+      category: fields.category === 'clothes' ? 'clothes' : 'shoe',
       status: 'pending',
     });
 
@@ -154,9 +160,11 @@ router.post('/:businessId/shoe-records', managerOnly, handleImageUpload, async (
 router.get('/:businessId/shoe-records', managerOnly, async (req, res) => {
   try {
     const { businessId } = req.params;
-    const { type, limit } = req.query;
+    const { type, limit, category } = req.query;
     const filter = { business: businessId, manager: req.user.id };
     if (type) filter.type = type;
+    if (category === 'clothes') filter.category = 'clothes';
+    else if (category === 'shoe') filter.category = { $ne: 'clothes' };
     let query = ShoeRecord.find(filter).sort({ createdAt: -1 });
     if (limit) query = query.limit(Math.min(parseInt(limit, 10) || 20, 100));
     const records = await query.lean();

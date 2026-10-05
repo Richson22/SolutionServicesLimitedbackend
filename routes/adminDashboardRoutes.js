@@ -209,8 +209,16 @@ router.get('/records', adminOnly, async (req, res) => {
 router.get('/:businessId/shoe-records', adminOnly, async (req, res) => {
   try {
     const { businessId } = req.params;
+    const { category } = req.query;
 
-    const records = await ShoeRecord.find({ business: businessId })
+    // Sales have their own page (/AdminSales), so keep them out of Records.
+    const filter = { business: businessId, type: { $ne: 'sale' } };
+
+    // Old records have no category saved, so "not clothes" counts as shoes.
+    if (category === 'clothes') filter.category = 'clothes';
+    else if (category === 'shoe') filter.category = { $ne: 'clothes' };
+
+    const records = await ShoeRecord.find(filter)
       .sort({ createdAt: -1 })
       .populate('manager', 'name')
       .lean();
@@ -243,11 +251,18 @@ router.get('/shoe-records/:id', adminOnly, async (req, res) => {
 // PATCH /api/admin/shoe-records/:id — edit shoeName/quantity/price/notes
 router.patch('/shoe-records/:id', adminOnly, async (req, res) => {
   try {
-    const { shoeName, size, quantity, price, notes } = req.body;
+    const { shoeName, size, quantity, price, notes, category } = req.body;
 
     const update = {};
-    if (shoeName !== undefined) update.shoeName = shoeName;
+    if (shoeName !== undefined) {
+      update.shoeName = String(shoeName).trim();
+      // Keep the heading in step with the name (attendance titles are left alone)
+      const current = await ShoeRecord.findById(req.params.id).select('type');
+      if (current?.type === 'arrival') update.title = `New arrival: ${update.shoeName || 'Unnamed item'}`;
+      if (current?.type === 'sale') update.title = `Sale: ${update.shoeName || 'Unnamed item'}`;
+    }
     if (size !== undefined) update.size = size;
+    if (category === 'shoe' || category === 'clothes') update.category = category;
     if (quantity !== undefined) update.quantity = quantity === '' ? null : Number(quantity);
     if (price !== undefined) update.price = price === '' ? null : Number(price);
     if (notes !== undefined) update.notes = notes;

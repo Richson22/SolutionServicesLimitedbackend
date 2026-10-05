@@ -55,7 +55,7 @@ router.post(
         size: size || '',
       })
         .sort({ createdAt: -1 })
-        .select('imageUrl')
+        .select('imageUrl category')
         .lean();
 
       const record = await ShoeRecord.create({
@@ -68,6 +68,7 @@ router.post(
         quantity: qty,
         price: Number(price),
         imageUrl: matchingArrival?.imageUrl || '',
+        category: matchingArrival?.category || 'shoe',
         status: 'pending',
       });
 
