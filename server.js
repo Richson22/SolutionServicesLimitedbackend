@@ -53,6 +53,7 @@ app.use('/api', authRoutes);
 app.use('/api/admin/shoes', adminShoeRoutes);
 app.use('/api/shoes', shoeRoutes);
 app.use('/api/admin', adminDashboardRoutes);
+app.use('/api/admin', require('./routes/adminSales'));
 const generalManagerRoutes = require('./routes/generalManagerRoutes');
 app.use('/api/general-manager', generalManagerRoutes);
 app.use('/api/manager', managerRoutes);
