@@ -38,9 +38,23 @@ const shoeRecordImageStorage = new CloudinaryStorage({
 });
 const uploadShoeRecordImage = multer({
   storage: shoeRecordImageStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 
+// Wraps multer so upload errors come back as readable JSON messages
+function handleImageUpload(req, res, next) {
+  uploadShoeRecordImage.single('image')(req, res, (err) => {
+    if (err) {
+      console.error('Image upload error:', err);
+      const message =
+        err.code === 'LIMIT_FILE_SIZE'
+          ? 'Photo is too large (max 10MB). Try a smaller photo.'
+          : `Photo upload failed: ${err.message || 'unsupported file'}`;
+      req.uploadWarning = message;   // save the record without a photo instead of losing it
+    }
+    next();
+  });
+}
 // GET /api/manager/me — works for any manager, no businessId needed
 router.get('/me', [verifyToken, requireRole('manager', 'general-manager')], async (req, res) => {
   try {
@@ -98,7 +112,7 @@ router.get('/:businessId/shoe-submissions', managerOnly, async (req, res) => {
 
 // POST /api/manager/:businessId/shoe-records
 // multipart/form-data: { type: 'arrival'|'sale'|'attendance', ...fields, image? }
-router.post('/:businessId/shoe-records', managerOnly, uploadShoeRecordImage.single('image'), async (req, res) => {
+router.post('/:businessId/shoe-records', managerOnly, handleImageUpload, async (req, res) => {
   try {
     const { businessId } = req.params;
     const { type, ...fields } = req.body;
@@ -126,7 +140,7 @@ router.post('/:businessId/shoe-records', managerOnly, uploadShoeRecordImage.sing
       status: 'pending',
     });
 
-    res.status(201).json({ success: true, record });
+    res.status(201).json({ success: true, record, warning: req.uploadWarning || null });
   } catch (err) {
     console.error('Error creating shoe record:', err);
     res.status(500).json({ success: false, message: 'Failed to submit record' });
