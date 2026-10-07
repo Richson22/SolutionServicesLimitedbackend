@@ -214,9 +214,10 @@ router.get('/:businessId/shoe-records', adminOnly, async (req, res) => {
     // Sales have their own page (/AdminSales), so keep them out of Records.
     const filter = { business: businessId, type: { $ne: 'sale' } };
 
-    // Old records have no category saved, so "not clothes" counts as shoes.
+    // Old records have no category saved, so they remain in the shoes segment.
     if (category === 'clothes') filter.category = 'clothes';
-    else if (category === 'shoe') filter.category = { $ne: 'clothes' };
+    else if (category === 'watches') filter.category = 'watches';
+    else if (category === 'shoe') filter.category = { $nin: ['clothes', 'watches'] };
 
     const records = await ShoeRecord.find(filter)
       .sort({ createdAt: -1 })
@@ -262,7 +263,7 @@ router.patch('/shoe-records/:id', adminOnly, async (req, res) => {
       if (current?.type === 'sale') update.title = `Sale: ${update.shoeName || 'Unnamed item'}`;
     }
     if (size !== undefined) update.size = size;
-    if (category === 'shoe' || category === 'clothes') update.category = category;
+    if (['shoe', 'clothes', 'watches'].includes(category)) update.category = category;
     if (quantity !== undefined) update.quantity = quantity === '' ? null : Number(quantity);
     if (price !== undefined) update.price = price === '' ? null : Number(price);
     if (notes !== undefined) update.notes = notes;

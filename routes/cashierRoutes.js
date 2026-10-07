@@ -5,19 +5,53 @@ const ShoeRecord = require('../models/ShoeRecord');
 const { verifyToken, requireRole, requireOwnBusiness } = require('../middleware/auth');
 
 router.get(
+  '/:businessId/sales',
+  verifyToken,
+  requireRole('cashier'),
+  requireOwnBusiness,
+  async (req, res) => {
+    try {
+      const filter = { business: req.params.businessId, type: 'sale' };
+      const { category } = req.query;
+      if (category === 'clothes' || category === 'watches') filter.category = category;
+      else if (category === 'shoe') filter.category = { $nin: ['clothes', 'watches'] };
+
+      const sales = await ShoeRecord.find(filter)
+        .select('shoeName title size category quantity price imageUrl createdAt manager')
+        .populate('manager', 'name')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      res.json({ sales });
+    } catch (err) {
+      console.error('Error loading cashier sales:', err);
+      res.status(500).json({ message: 'Could not load sales' });
+    }
+  }
+);
+
+router.get(
   '/:businessId/prices',
   verifyToken,
   requireRole('cashier'),
   requireOwnBusiness,
   async (req, res) => {
     try {
-      const products = await ShoeRecord.find({
+      const { category } = req.query;
+      const filter = {
         business: req.params.businessId,
         type: 'arrival',
         status: 'approved',
         price: { $gt: 0 },
+      };
+
+      if (category === 'clothes' || category === 'watches') filter.category = category;
+      else if (category === 'shoe') filter.category = { $nin: ['clothes', 'watches'] };
+
+      const products = await ShoeRecord.find({
+        ...filter,
       })
-        .select('shoeName title size price imageUrl createdAt')
+        .select('shoeName title size price imageUrl category createdAt')
         .sort({ createdAt: -1 })
         .lean();
 
@@ -39,7 +73,7 @@ router.post(
   requireOwnBusiness,
   async (req, res) => {
     try {
-      const { shoeName, size, price, quantity } = req.body;
+      const { shoeName, size, price, quantity, category } = req.body;
 
       if (!shoeName || !price) {
         return res.status(400).json({ success: false, message: 'shoeName and price are required' });
@@ -53,6 +87,7 @@ router.post(
         type: 'arrival',
         shoeName,
         size: size || '',
+        category: category === 'clothes' || category === 'watches' ? category : { $nin: ['clothes', 'watches'] },
       })
         .sort({ createdAt: -1 })
         .select('imageUrl category')
@@ -68,7 +103,7 @@ router.post(
         quantity: qty,
         price: Number(price),
         imageUrl: matchingArrival?.imageUrl || '',
-        category: matchingArrival?.category || 'shoe',
+        category: matchingArrival?.category || (category === 'clothes' || category === 'watches' ? category : 'shoe'),
         status: 'pending',
       });
 

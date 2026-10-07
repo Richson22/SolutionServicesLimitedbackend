@@ -23,8 +23,8 @@ const shoeRecordSchema = new mongoose.Schema(
     // For attendance records this can just be the manager's name + date.
     title: { type: String, required: true, trim: true },
 
-    // Which product line this record belongs to (Shoes | Clothes tabs)
-    category: { type: String, enum: ['shoe', 'clothes'], default: 'shoe' },
+    // Which product line this record belongs to.
+    category: { type: String, enum: ['shoe', 'clothes', 'watches'], default: 'shoe' },
 
     // Optional link back to a listed product, if the arrival/sale is for
     // a shoe that's already (or will be) on the storefront.

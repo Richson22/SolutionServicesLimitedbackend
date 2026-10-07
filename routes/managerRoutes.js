@@ -100,7 +100,8 @@ router.get('/:businessId/shoe-submissions', managerOnly, async (req, res) => {
 
     const filter = { business: businessId, manager: req.user.id };
     if (category === 'clothes') filter.category = 'clothes';
-    else if (category === 'shoe') filter.category = { $ne: 'clothes' };
+    else if (category === 'watches') filter.category = 'watches';
+    else if (category === 'shoe') filter.category = { $nin: ['clothes', 'watches'] };
 
     const submissions = await ShoeRecord.find(filter)
       .sort({ createdAt: -1 })
@@ -142,7 +143,7 @@ router.post('/:businessId/shoe-records', managerOnly, handleImageUpload, async (
       price: fields.price ? Number(fields.price) : null,
       notes: fields.notes || fields.staffPresent || '',
       imageUrl: req.file ? req.file.path : '',
-      category: fields.category === 'clothes' ? 'clothes' : 'shoe',
+      category: ['clothes', 'watches'].includes(fields.category) ? fields.category : 'shoe',
       status: 'pending',
     });
 
@@ -164,7 +165,8 @@ router.get('/:businessId/shoe-records', managerOnly, async (req, res) => {
     const filter = { business: businessId, manager: req.user.id };
     if (type) filter.type = type;
     if (category === 'clothes') filter.category = 'clothes';
-    else if (category === 'shoe') filter.category = { $ne: 'clothes' };
+    else if (category === 'watches') filter.category = 'watches';
+    else if (category === 'shoe') filter.category = { $nin: ['clothes', 'watches'] };
     let query = ShoeRecord.find(filter).sort({ createdAt: -1 });
     if (limit) query = query.limit(Math.min(parseInt(limit, 10) || 20, 100));
     const records = await query.lean();
