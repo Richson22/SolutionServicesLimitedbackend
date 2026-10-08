@@ -52,7 +52,7 @@ app.use('/api/auth', require('./routes/passwordRoutes'));
 app.use('/api', authRoutes);
 app.use('/api/admin/shoes', adminShoeRoutes);
 app.use('/api/shoes', shoeRoutes);
-const staffRecordRoutes = require('./routes/StaffrecordRoutes');
+const staffRecordRoutes = require('./routes/StaffRecordRoutes');
 app.use('/api/admin/staff-records', staffRecordRoutes.admin); // must come before adminDashboardRoutes
 app.use('/api/staff-records', staffRecordRoutes.staff);
 const peopleRoutes = require('./routes/peopleRoutes');
