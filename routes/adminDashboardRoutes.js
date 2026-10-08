@@ -20,7 +20,49 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 const { listEquipment, updateEquipmentStatus, deleteEquipment } = require('../controllers/equipmentController');
 
 const adminOnly = [verifyToken, requireRole('admin')];
-// const adminAuthMiddleware = require('../middleware/adminAuth'); // uncomment + adjust path
+const adminAuthMiddleware = require('../middleware/adminAuth'); // uncomment + adjust path
+
+
+// ---- Absent rules (edit these two lines if needed) -------------------------
+const ABSENT_AFTER_HOUR = 10; // Nigeria time. Today only counts as absent after 12:00 noon.
+const DAYS_OFF = [];          // Days nobody is expected. 0 = Sunday ... 6 = Saturday. e.g. [0] for Sundays.
+// -----------------------------------------------------------------------------
+
+const ATTENDANCE_ROLES = ['student', 'staff', 'manager', 'general-manager'];
+
+const nigeriaNow = () => new Date(Date.now() + 60 * 60 * 1000); // Nigeria is UTC+1 all year
+const dayString = (d) => d.toISOString().slice(0, 10);
+
+// Should people with no check-in on this date be shown as absent?
+function absenceApplies(date) {
+  const now = nigeriaNow();
+  const today = dayString(now);
+  if (!date || date > today) return false;                                  // future days
+  if (DAYS_OFF.includes(new Date(`${date}T00:00:00Z`).getUTCDay())) return false; // day off
+  if (date < today) return true;                                            // past days
+  return now.getUTCHours() >= ABSENT_AFTER_HOUR;                            // today, after the cut-off
+}
+
+// Active accounts that have no attendance record on `date`.
+async function peopleWithNoRecord(date, role) {
+  if (!absenceApplies(date)) return [];
+  if (role && !ATTENDANCE_ROLES.includes(role)) return [];
+
+  const [users, marked] = await Promise.all([
+    User.find({ role: role || { $in: ATTENDANCE_ROLES }, suspended: { $ne: true } })
+      .select('name role businessId createdAt')
+      .lean(),
+    Attendance.find({ date }).select('user').lean(),
+  ]);
+  const have = new Set(marked.map((m) => String(m.user)));
+
+  return users.filter((u) => {
+    if (have.has(String(u._id))) return false;
+    // do not mark someone absent for days before their account existed
+    if (u.createdAt && dayString(new Date(new Date(u.createdAt).getTime() + 60 * 60 * 1000)) > date) return false;
+    return true;
+  });
+}
 
 // GET /api/admin/attendance?role=student|staff|manager&status=on-time|late|absent&date=YYYY-MM-DD
 router.get('/attendance', adminOnly, async (req, res) => {
@@ -48,6 +90,24 @@ router.get('/attendance', adminOnly, async (req, res) => {
       checkInPhotoUrl: r.checkInPhotoUrl || '',
     }));
 
+    // People who never checked in show as Absent (only when not filtering for on-time / late)
+    if (date && (!status || status === 'absent')) {
+      const missing = await peopleWithNoRecord(date, role);
+      missing.forEach((u) => {
+        rows.push({
+          id: `absent-${u._id}`,
+          name: u.name,
+          role: u.role,
+          business: u.businessId,
+          date,
+          checkInTime: null,
+          checkOutTime: null,
+          status: 'absent',
+          checkInPhotoUrl: '',
+        });
+      });
+    }
+
     res.json({ records: rows });
   } catch (err) {
     console.error('Error loading attendance:', err);
@@ -58,19 +118,21 @@ router.get('/attendance', adminOnly, async (req, res) => {
 // GET /api/admin/attendance/summary?date=YYYY-MM-DD
 router.get('/attendance/summary', adminOnly, async (req, res) => {
   try {
-    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const date = req.query.date || dayString(nigeriaNow());
 
-    const [onTime, late, absent, totalEligible] = await Promise.all([
+    const [onTime, late, absent, totalEligible, missing] = await Promise.all([
       Attendance.countDocuments({ date, status: 'on-time' }),
       Attendance.countDocuments({ date, status: 'late' }),
       Attendance.countDocuments({ date, status: 'absent' }),
-      User.countDocuments({ role: { $in: ['student', 'staff', 'manager', 'general-manager'] } }),
+      User.countDocuments({ role: { $in: ATTENDANCE_ROLES }, suspended: { $ne: true } }),
+      peopleWithNoRecord(date),
     ]);
 
     const marked = onTime + late + absent;
-    const notMarked = Math.max(totalEligible - marked, 0);
+    // Once absence applies, nobody is "not marked yet": they are absent.
+    const notMarked = absenceApplies(date) ? 0 : Math.max(totalEligible - marked, 0);
 
-    res.json({ onTime, late, absent, notMarked });
+    res.json({ onTime, late, absent: absent + missing.length, notMarked });
   } catch (err) {
     console.error('Error loading attendance summary:', err);
     res.status(500).json({ message: 'Failed to load summary' });
