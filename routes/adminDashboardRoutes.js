@@ -20,8 +20,11 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 const { listEquipment, updateEquipmentStatus, deleteEquipment } = require('../controllers/equipmentController');
 
 const adminOnly = [verifyToken, requireRole('admin')];
-const adminAuthMiddleware = require('../middleware/adminAuth'); // uncomment + adjust path
+// const adminAuthMiddleware = require('../middleware/adminAuth'); // uncomment + adjust path
 
+// Replace lines 25-78 of server/routes/adminDashboardRoutes.js
+// (from "// GET /api/admin/attendance?role=..." down to the closing "});" of the /attendance/summary route)
+// with everything in this file.
 
 // ---- Absent rules (edit these two lines if needed) -------------------------
 const ABSENT_AFTER_HOUR = 10; // Nigeria time. Today only counts as absent after 12:00 noon.
