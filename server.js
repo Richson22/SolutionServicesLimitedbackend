@@ -52,10 +52,14 @@ app.use('/api/auth', require('./routes/passwordRoutes'));
 app.use('/api', authRoutes);
 app.use('/api/admin/shoes', adminShoeRoutes);
 app.use('/api/shoes', shoeRoutes);
-   const staffRecordRoutes = require('./routes/StaffRecordRoutes');
-   app.use('/api/admin/staff-records', staffRecordRoutes.admin); // must come before adminDashboardRoutes
-   app.use('/api/staff-records', staffRecordRoutes.staff);
-   app.use('/api/admin', adminDashboardRoutes);
+const staffRecordRoutes = require('./routes/StaffrecordRoutes');
+app.use('/api/admin/staff-records', staffRecordRoutes.admin); // must come before adminDashboardRoutes
+app.use('/api/staff-records', staffRecordRoutes.staff);
+const peopleRoutes = require('./routes/peopleRoutes');
+const payrollRoutes = require('./routes/payrollRoutes');
+app.use('/api/admin/people', peopleRoutes);
+app.use('/api/admin/payroll', payrollRoutes);
+app.use('/api/admin', adminDashboardRoutes);
 app.use('/api/admin', require('./routes/adminSales'));
 const generalManagerRoutes = require('./routes/generalManagerRoutes');
 app.use('/api/general-manager', generalManagerRoutes);
