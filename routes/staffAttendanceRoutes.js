@@ -6,8 +6,8 @@ const User = require('../models/User');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
 // ---- Adjust these to your rules (Nigeria time) ----
-const SHIFT_START = { h: 8, m: 0 };    // on time up to here
-const CLOSES_AT = { h: 10, m: 30 };    // clock-in not allowed after this
+const OPENS_AT = { h: 8, m: 0 };       // clock-in opens
+const CLOSES_AT = { h: 8, m: 30 };     // clock-in not allowed after this (marked absent)
 const SHOP = { lat: 6.716498, lng: 8.779433 };
 const RADIUS_METERS = 100;
 
@@ -55,6 +55,9 @@ router.post('/clock-in', guard, async (req, res) => {
     }
 
     const mins = minutesNow();
+    if (mins < OPENS_AT.h * 60 + OPENS_AT.m) {
+      return res.status(403).json({ success: false, message: 'Clock-in opens at 8:00 AM' });
+    }
     if (mins > CLOSES_AT.h * 60 + CLOSES_AT.m) {
       return res.status(403).json({ success: false, message: 'Clock-in closed. You are marked absent today.' });
     }
@@ -62,7 +65,7 @@ router.post('/clock-in', guard, async (req, res) => {
     const user = await User.findById(req.user.id).select('role businessId');
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    const status = mins > SHIFT_START.h * 60 + SHIFT_START.m ? 'late' : 'on-time';
+    const status = 'on-time';
     const rec = await Attendance.findOneAndUpdate(
       { user: req.user.id, date },
       { $setOnInsert: {
@@ -88,6 +91,29 @@ router.post('/clock-out', guard, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Could not clock out' });
+  }
+});
+
+
+// Called every few minutes while the staff member is clocked in and the dashboard is open.
+router.post('/ping', guard, async (req, res) => {
+  try {
+    const { lat, lng } = req.body || {};
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      return res.status(400).json({ success: false, message: 'Location is required' });
+    }
+    const rec = await Attendance.findOne({ user: req.user.id, date: todayString() });
+    if (!rec || !rec.checkInTime || rec.checkOutTime) {
+      return res.json({ success: true, ignored: true });
+    }
+    const distance = Math.round(distanceMeters(lat, lng, SHOP.lat, SHOP.lng));
+    const inRange = distance <= RADIUS_METERS;
+    rec.lastLocation = { lat, lng, at: new Date(), distance, inRange };
+    if (!inRange && !rec.leftShopAt) rec.leftShopAt = new Date();
+    await rec.save();
+    res.json({ success: true, inRange, distance });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Could not save location' });
   }
 });
 

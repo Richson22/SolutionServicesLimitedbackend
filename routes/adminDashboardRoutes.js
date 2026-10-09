@@ -27,7 +27,8 @@ const adminOnly = [verifyToken, requireRole('admin')];
 // with everything in this file.
 
 // ---- Absent rules (edit these two lines if needed) -------------------------
-const ABSENT_AFTER_HOUR = 10; // Nigeria time. Today only counts as absent after 10:00 noon.
+const ABSENT_AFTER_HOUR = 8;
+const ABSENT_AFTER_MINUTE = 30;// Nigeria time. Today only counts as absent after 10:00 noon.
 const DAYS_OFF = [];          // Days nobody is expected. 0 = Sunday ... 6 = Saturday. e.g. [0] for Sundays.
 // -----------------------------------------------------------------------------
 
@@ -43,7 +44,7 @@ function absenceApplies(date) {
   if (!date || date > today) return false;                                  // future days
   if (DAYS_OFF.includes(new Date(`${date}T00:00:00Z`).getUTCDay())) return false; // day off
   if (date < today) return true;                                            // past days
-  return now.getUTCHours() >= ABSENT_AFTER_HOUR;                            // today, after the cut-off
+  return now.getUTCHours() * 60 + now.getUTCMinutes() > ABSENT_AFTER_HOUR * 60 + ABSENT_AFTER_MINUTE;                          // today, after the cut-off
 }
 
 // Active accounts that have no attendance record on `date`.
