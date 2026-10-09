@@ -27,7 +27,7 @@ const adminOnly = [verifyToken, requireRole('admin')];
 // with everything in this file.
 
 // ---- Absent rules (edit these two lines if needed) -------------------------
-const ABSENT_AFTER_HOUR = 10; // Nigeria time. Today only counts as absent after 12:00 noon.
+const ABSENT_AFTER_HOUR = 10; // Nigeria time. Today only counts as absent after 10:00 noon.
 const DAYS_OFF = [];          // Days nobody is expected. 0 = Sunday ... 6 = Saturday. e.g. [0] for Sundays.
 // -----------------------------------------------------------------------------
 
