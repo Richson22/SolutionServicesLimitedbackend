@@ -57,8 +57,10 @@ app.use('/api/admin/staff-records', staffRecordRoutes.admin); // must come befor
 app.use('/api/staff-records', staffRecordRoutes.staff);
 const peopleRoutes = require('./routes/peopleRoutes');
 const payrollRoutes = require('./routes/payrollRoutes');
+const galleryRoutes = require('./routes/galleryRoutes');
 const staffAttendanceRoutes = require('./routes/staffAttendanceRoutes');
 app.use('/api/staff/me/attendance', staffAttendanceRoutes);
+app.use('/api/gallery', galleryRoutes);
 app.use('/api/admin/people', peopleRoutes);
 app.use('/api/admin/payroll', payrollRoutes);
 app.use('/api/admin', adminDashboardRoutes);
