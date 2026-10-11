@@ -67,6 +67,7 @@ app.use('/api/staff/me/profile', staffProfileRoutes.staff);
 app.use('/api/admin/staff-profiles', staffProfileRoutes.admin);
 app.use('/api/general-manager/weekly-earnings', weeklyEarnings.gm);
 app.use('/api/admin/weekly-earnings', weeklyEarnings.admin);
+app.use('/api/staff/me/earnings', weeklyEarnings.staff);
 app.use('/api/admin/people', peopleRoutes);
 app.use('/api/admin/payroll', payrollRoutes);
 app.use('/api/admin', adminDashboardRoutes);
