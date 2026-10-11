@@ -6,6 +6,7 @@ const { createEquipment, listEquipment } = require('../controllers/equipmentCont
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const Record = require('../models/Record');
+const StaffRecord = require('../models/StaffRecord');
 
 
 const gmOnly = [verifyToken, requireRole('general-manager')];
@@ -125,4 +126,24 @@ router.get('/records', gmOnly, async (req, res) => {
   }
 });
 
+// GET /staff-records?business=&from=YYYY-MM-DD&to=YYYY-MM-DD&status=
+// Work that staff sent in (read-only). Solution Feet Hub is not included.
+router.get('/staff-records', gmOnly, async (req, res) => {
+  try {
+    const { business, from, to, status } = req.query;
+    if (business === 'SolutionfeetHub-3') return res.status(403).json({ message: 'Not available' });
+    const filter = { business: business || { $ne: 'SolutionfeetHub-3' } };
+    if (status) filter.status = status;
+    if (from || to) {
+      filter.recordDate = {};
+      if (from) filter.recordDate.$gte = from;
+      if (to) filter.recordDate.$lte = to;
+    }
+    const records = await StaffRecord.find(filter).sort({ recordDate: -1, createdAt: -1 }).limit(300).lean();
+    res.json({ records });
+  } catch (err) {
+    console.error('gm staff-records error:', err);
+    res.status(500).json({ message: 'Failed to load staff records' });
+  }
+});
 module.exports = router;
