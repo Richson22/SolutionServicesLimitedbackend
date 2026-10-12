@@ -61,6 +61,8 @@ const weeklyEarnings = require('./routes/weeklyEarningsRoutes');
 const staffProfileRoutes = require('./routes/staffProfileRoutes');
 const galleryRoutes = require('./routes/galleryRoutes');
 const staffAttendanceRoutes = require('./routes/staffAttendanceRoutes');
+const recordComments = require('./routes/recordCommentsRoutes');
+app.use('/api/record-comments', recordComments);
 app.use('/api/staff/me/attendance', staffAttendanceRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/staff/me/profile', staffProfileRoutes.staff);

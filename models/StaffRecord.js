@@ -17,6 +17,19 @@ const staffRecordSchema = new mongoose.Schema(
     status: { type: String, enum: ['submitted', 'reviewed', 'rejected'], default: 'submitted' },
     rejectReason: { type: String, default: '' },
     reviewedAt: { type: Date },
+
+    // Comment thread between admin / general manager and the staff member
+    comments: [
+      {
+        authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        authorName: { type: String, default: '' },
+        role: { type: String, enum: ['staff', 'admin', 'gm'], default: 'staff' },
+        text: { type: String, required: true, trim: true, maxlength: 1000 },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    staffUnread: { type: Boolean, default: false }, // admin/GM commented, staff has not opened it yet
+    leadUnread: { type: Boolean, default: false },  // staff replied, admin/GM has not opened it yet
   },
   { timestamps: true }
 );

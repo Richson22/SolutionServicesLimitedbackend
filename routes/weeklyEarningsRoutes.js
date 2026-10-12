@@ -175,4 +175,4 @@ gm.get('/:staffId/records', gmOnly, async (req, res) => {
   }
 });
 
-module.exports = { admin, gm };
+module.exports = { admin, gm, staff };
