@@ -4,6 +4,7 @@
 //   const weeklyEarnings = require('./routes/weeklyEarningsRoutes');
 //   app.use('/api/admin/weekly-earnings', weeklyEarnings.admin);
 //   app.use('/api/general-manager/weekly-earnings', weeklyEarnings.gm);
+//   app.use('/api/staff/me/earnings', weeklyEarnings.staff);
 const express = require('express');
 const StaffRecord = require('../models/StaffRecord');
 const WeeklyPayout = require('../models/WeeklyPayout');
@@ -172,6 +173,52 @@ gm.get('/:staffId/records', gmOnly, async (req, res) => {
     res.json({ records });
   } catch (err) {
     res.status(500).json({ message: 'Could not load records' });
+  }
+});
+
+/* ---------------- staff: their own earnings ---------------- */
+const staff = express.Router();
+const staffOnly = [verifyToken, requireRole('staff', 'manager', 'general-manager')];
+
+staff.get('/', staffOnly, async (req, res) => {
+  try {
+    const me = await User.findById(req.user.id).select('businessId');
+    const businessId = me ? me.businessId : '';
+    const rate = RATES[businessId] || 0;
+
+    const thisWeek = weekRange();
+    const weeks = [];
+    for (let i = 0; i < 5; i += 1) {
+      const d = new Date(`${thisWeek.start}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - 7 * i);
+      weeks.push(weekRange(d.toISOString().slice(0, 10)));
+    }
+    const results = await Promise.all(weeks.map((w) => computeWeek(w.start, w.end, { staffId: req.user.id })));
+    const summary = weeks.map((w, i) => {
+      const r = results[i][0];
+      return {
+        weekStart: w.start, weekEnd: w.end,
+        work: r ? r.work : 0, pay: r ? r.pay : 0, pending: r ? r.pending : 0, records: r ? r.records : 0,
+        paid: r ? r.paid : false, paidAmount: r ? r.paidAmount : 0, paidMethod: r ? r.paidMethod : '',
+      };
+    });
+
+    // today's reviewed work and pending work
+    const today = nigeriaToday().toISOString().slice(0, 10);
+    const todays = await StaffRecord.find({ staff: req.user.id, recordDate: today, business: { $in: Object.keys(RATES) } }).lean();
+    const todayWork = todays.filter((r) => r.status === 'reviewed').reduce((t, r) => t + (Number(r.amount) || 0), 0);
+    const todayPending = todays.filter((r) => r.status === 'submitted').reduce((t, r) => t + (Number(r.amount) || 0), 0);
+
+    res.json({
+      applies: rate > 0,
+      rate,
+      week: summary[0],
+      today: { work: todayWork, pay: Math.round((todayWork * rate) / 100), pending: todayPending },
+      history: summary.slice(1),
+    });
+  } catch (err) {
+    console.error('staff earnings error:', err);
+    res.status(500).json({ message: 'Could not load earnings' });
   }
 });
 
