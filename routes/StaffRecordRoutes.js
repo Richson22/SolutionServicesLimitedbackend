@@ -15,6 +15,7 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const PAYMENT_MODES = ['Cash', 'Transfer', 'POS'];
+const CLIENT_TYPES = ['Adult', 'Children'];
 
 function todayString() {
   // Nigeria is UTC+1 all year
@@ -86,6 +87,7 @@ staff.post('/', staffOnly, handleUpload, async (req, res) => {
       service,
       amount,
       paymentMode,
+      clientType: CLIENT_TYPES.includes(req.body.clientType) ? req.body.clientType : '',
       note: String(req.body.note || '').trim(),
       imageUrl: req.file ? req.file.path : '',
     });

@@ -12,6 +12,7 @@ const staffRecordSchema = new mongoose.Schema(
     service: { type: String, required: true, trim: true },
     amount: { type: Number, default: 0, min: 0 },
     paymentMode: { type: String, enum: ['Cash', 'Transfer', 'POS'], default: 'Cash' },
+    clientType: { type: String, enum: ['', 'Adult', 'Children'], default: '' }, // barbing: adult or children
     note: { type: String, default: '', trim: true },
     imageUrl: { type: String, default: '' },
     status: { type: String, enum: ['submitted', 'reviewed', 'rejected'], default: 'submitted' },
