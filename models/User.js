@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema(
 },
     businessId: { type: String }, // which of the 3 shops — plain string for now until you have a Business model
     mustChangePassword: { type: Boolean, default: false },
+    deviceId: { type: String, default: null, index: true },
+    deviceBoundAt: { type: Date, default: null },
     suspended: { type: Boolean, default: false }, // blocks login when true — enforced in the login controller
   },
   { timestamps: true } // adds createdAt / updatedAt automatically

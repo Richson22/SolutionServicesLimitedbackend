@@ -4,6 +4,7 @@ const router = express.Router();
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
 const { verifyToken, requireRole } = require('../middleware/auth');
+const { requireBoundDevice } = require('../middleware/deviceLock');
 
 // ---- Adjust these to your rules (Nigeria time) ----
 const OPENS_AT = { h: 8, m: 0 };       // clock-in opens
@@ -22,7 +23,7 @@ function distanceMeters(lat1, lng1, lat2, lng2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-const guard = [verifyToken, requireRole('staff', 'manager', 'general-manager')];
+const guard = [verifyToken, requireRole('staff', 'manager', 'general-manager'), requireBoundDevice];
 
 router.get('/status', guard, async (req, res) => {
   try {
