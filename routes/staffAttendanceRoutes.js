@@ -8,8 +8,7 @@ const { requireBoundDevice } = require('../middleware/deviceLock');
 
 // ---- Adjust these to your rules (Nigeria time) ----
 const OPENS_AT = { h: 8, m: 0 };       // clock-in opens
-const ON_TIME_UNTIL = { h: 8, m: 30 }; // up to and including 8:30 = on time
-const CLOSES_AT = { h: 8, m: 35 };     // 8:31 to 8:35 = late. After 8:35 nobody can clock in (absent)
+const ON_TIME_UNTIL = { h: 8, m: 30 }; //up to and including 8:30 = on time to up to and including 8:30 = on time, after that = late
 const DAYS_OFF = [];                   // days nobody is expected. 0 = Sunday ... 6 = Saturday. e.g. [0]
 const TRACKED_ROLES = ['staff', 'manager', 'general-manager'];
 const SHOP = { lat: 6.716498, lng: 8.779433 };
@@ -61,9 +60,6 @@ router.post('/clock-in', guard, async (req, res) => {
     const mins = minutesNow();
     if (mins < OPENS_AT.h * 60 + OPENS_AT.m) {
       return res.status(403).json({ success: false, message: 'Clock-in opens at 8:00 AM' });
-    }
-    if (mins > CLOSES_AT.h * 60 + CLOSES_AT.m) {
-      return res.status(403).json({ success: false, message: 'Clock-in closed at 8:35 AM. You are marked absent today.' });
     }
 
     const user = await User.findById(req.user.id).select('role businessId');
@@ -141,7 +137,7 @@ function absenceCounts(date) {
   if (date > today) return false;
   if (DAYS_OFF.includes(new Date(`${date}T00:00:00Z`).getUTCDay())) return false;
   if (date < today) return true;
-  return minutesNow() > CLOSES_AT.h * 60 + CLOSES_AT.m; // today: only after clock-in has closed
+  return false; // today: they can still clock in, so not absent until the day is over
 }
 
 router.get('/summary', viewerGuard, async (req, res) => {
