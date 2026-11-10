@@ -5,7 +5,7 @@ const weeklyPayoutSchema = new mongoose.Schema(
   {
     staff: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     staffName: { type: String, default: '' },
-    weekStart: { type: String, required: true }, // Monday, 'YYYY-MM-DD'
+    weekStart: { type: String, required: true }, // Sunday, 'YYYY-MM-DD' (weeks run Sunday to Saturday; payouts before Nov 2026 used Monday)
     workTotal: { type: Number, default: 0 },     // reviewed work that week, saved at payment time
     amount: { type: Number, required: true },    // what was paid
     method: { type: String, enum: ['Cash', 'Transfer', 'POS'], default: 'Cash' },

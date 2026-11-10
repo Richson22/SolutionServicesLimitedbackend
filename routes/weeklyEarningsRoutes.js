@@ -22,11 +22,11 @@ const RATES = {
 
 const nigeriaToday = () => new Date(Date.now() + 3600000);
 
-// Monday to Sunday week that contains `input` (YYYY-MM-DD). Defaults to this week.
+// Sunday to Saturday week that contains `input` (YYYY-MM-DD). Defaults to this week.
 function weekRange(input) {
   const base = input && /^\d{4}-\d{2}-\d{2}$/.test(input) ? new Date(`${input}T00:00:00Z`) : nigeriaToday();
   const d = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate()));
-  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  d.setUTCDate(d.getUTCDate() - d.getUTCDay()); // getUTCDay(): Sunday = 0, so this steps back to the most recent Sunday
   const start = d.toISOString().slice(0, 10);
   d.setUTCDate(d.getUTCDate() + 6);
   return { start, end: d.toISOString().slice(0, 10) };
