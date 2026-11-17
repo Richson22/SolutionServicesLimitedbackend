@@ -37,6 +37,9 @@ const shoeRecordSchema = new mongoose.Schema(
 
     // --- Sale-specific fields ---
     price: { type: Number, default: null },
+    // The day the sale actually happened (a cashier can record a sale after the fact).
+    // Older records don't have this, so always fall back to createdAt when it's missing.
+    soldAt: { type: Date, default: null },
 
     // --- Attendance-specific fields ---
     checkInTime: { type: Date, default: null },
@@ -49,7 +52,8 @@ const shoeRecordSchema = new mongoose.Schema(
 
     notes: { type: String, default: '' },
     imageUrl: { type: String, default: '' }, // photo of the shoe/item, for arrival & sale records
-   // Review status — matches the approve/reject actions on the admin
+
+    // Review status — matches the approve/reject actions on the admin
     // Records page (same pattern as the barber-shop Record model).
     status: {
       type: String,
