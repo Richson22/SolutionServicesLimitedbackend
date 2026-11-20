@@ -50,7 +50,7 @@ router.get(
       else if (category === 'shoe') filter.category = { $nin: ['clothes', 'watches'] };
 
       const sales = await ShoeRecord.find(filter)
-        .select('shoeName title size category quantity price imageUrl createdAt soldAt manager')
+        .select('shoeName title size category quantity price listPrice imageUrl createdAt soldAt manager')
         .populate('manager', 'name')
         .sort({ createdAt: -1 })
         .lean();
@@ -106,7 +106,7 @@ router.post(
   requireOwnBusiness,
   async (req, res) => {
     try {
-      const { shoeName, size, price, quantity, category } = req.body;
+      const { shoeName, size, price, listPrice, quantity, category } = req.body;
 
       if (!shoeName || !price) {
         return res.status(400).json({ success: false, message: 'shoeName and price are required' });
@@ -135,6 +135,7 @@ router.post(
         size: size || '',
         quantity: qty,
         price: Number(price),
+        listPrice: Number(listPrice) > 0 ? Number(listPrice) : Number(price),
         imageUrl: matchingArrival?.imageUrl || '',
         category: matchingArrival?.category || (category === 'clothes' || category === 'watches' ? category : 'shoe'),
         status: 'pending',

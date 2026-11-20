@@ -36,7 +36,8 @@ const shoeRecordSchema = new mongoose.Schema(
     quantity: { type: Number, default: null },
 
     // --- Sale-specific fields ---
-    price: { type: Number, default: null },
+    price: { type: Number, default: null }, // what the item was actually sold for (after any negotiation)
+    listPrice: { type: Number, default: null }, // the approved list price at the time of sale
     // The day the sale actually happened (a cashier can record a sale after the fact).
     // Older records don't have this, so always fall back to createdAt when it's missing.
     soldAt: { type: Date, default: null },
